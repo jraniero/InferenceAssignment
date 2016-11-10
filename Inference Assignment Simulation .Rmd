@@ -1,0 +1,113 @@
+---
+title: "Analysis of Exponential distribution"
+author: "Jose Gonzalez"
+date: "6 novembre 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+lambda<-0.2
+simulations<-1000
+samples<-40
+```
+
+
+#Distribution of the mean
+
+Theoretical mean of an exponential distribution is 1/lambda:
+```{r}
+1/lambda
+```
+
+The observed mean of `r simulations*samples` drawn from an exponential distribution with lambda `r lambda`:
+```{r}
+mean(rexp(simulations,lambda))
+```
+
+Following code will create a distribution of `r simulations`based on the mean of `r samples` values drawn from an exponential distribution:
+```{r}
+mns = NULL
+for (i in 1 : simulations) mns = c(mns, mean(rexp(n=samples,lambda)))
+```
+
+The mean of the `r simulations` of `r samples' samples is:
+```{r}
+mean(mns)
+```
+
+Following figure shows the distribution of `r simulations*samples` samples drawn from an exponential distribution with lambda `r lambda`
+```{r}
+rexp_sim<-rexp(simulations*samples,lambda)
+n_breaks<-20
+hist(rexp_sim,
+     breaks=n_breaks,
+     main=paste("Histogram of ",simulations*samples," samples from exponential distribution with lambda",lambda))
+
+abline(v=1/lambda,lty="dashed",col="red")
+text(x=1/lambda,
+     y=sum(abs(rexp_sim-1/lambda)<(1/lambda)/n_breaks),
+     labels=paste("Theoretical mean: ",1/lambda),
+     pos=4)
+```
+
+The following figure shows the distribution of the mean of `r simulations` distributions of `r samples` drawn from an exponential distribution with lambda `r lambda`
+```{r}
+sum(abs(mns-mean(mns))<(max(mns)-min(mns))/n_breaks)
+(mean(mns))/n_breaks
+```
+hist(mns,
+      breaks=n_breaks,
+     main=paste("Histogram of means of ",simulations," distributions of ",samples, "samples from exponential distribution with lambda",lambda))
+
+abline(v=mean(mns),lty="dashed",col="red")
+text(x=mean(mns),
+     y=sum(abs(mns-mean(mns))<(mean(mns))/n_breaks),
+     labels=paste("Observed population mean: ",mean(mns)),
+     pos=4)
+```
+
+
+#Distribution of the variance
+```{r}
+hist(rexp(simulations,lambda))
+```
+
+```{r}
+var = NULL
+for (i in 1 : simulations) var = c(var, var(rexp(n=samples,lambda)))
+hist(var)
+```
+
+Theoretical variance deviation:
+```{r}
+1/lambda^2
+```
+
+Variance of `simulations` samples:
+```{r}
+var(rexp(simulations,lambda))
+```
+
+Estimation of population variance based on samples variance:
+```{r}
+pvar=(mean(var))*samples/(samples-1)
+pvar
+```
+
+
+Quantiles of distribution of means
+```{r}
+quantiles<-c(0.025,.5,.975)
+quantile(mns,quantiles)
+```
+
+Quantiles of normal distribution
+```{r}
+qnorm(quantiles,mean=mean(mns),sd=sqrt(pvar/samples))
+```
+
+Probability of finding the sampled 2.5%-97.5% interval inside normal distribution:
+```{r}
+pnorm(q=quantile(mns,quantiles[length(quantiles)]),mean=mean(mns),sd=sqrt(pvar/samples))-pnorm(q=quantile(mns,quantiles[1]),mean=mean(mns),sd=sqrt(pvar/samples))
+```
+
