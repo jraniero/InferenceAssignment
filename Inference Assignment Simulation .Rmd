@@ -4,110 +4,159 @@ author: "Jose Gonzalez"
 date: "6 novembre 2016"
 output: html_document
 ---
+#Introduction
+In this report we will compare the means and variances of samples taken from a exponential random variable against the theoretical mean and variance of such a distribution.
+We will also compare the distribution of the means of the samples to a normal distribution.
 
+
+#Parameters
 ```{r setup, include=FALSE}
 lambda<-0.2
 simulations<-1000
 samples<-40
+n_breaks<-20 #Number of breaks in histograms
+set.seed(42) #Reproducibility of results
 ```
 
 
-#Distribution of the mean
+#Sampled mean vs theoretical mean
 
-Theoretical mean of an exponential distribution is 1/lambda:
+##Theoretical mean
+Theoretical mean of an exponential random variable is 1/lambda:
 ```{r}
 1/lambda
 ```
 
-The observed mean of `r simulations*samples` drawn from an exponential distribution with lambda `r lambda`:
+The observed mean of `r prettyNum(simulations,big.mark=',')` drawn from an exponential distribution with lambda `r lambda`:
 ```{r}
 mean(rexp(simulations,lambda))
 ```
 
-Following code will create a distribution of `r simulations`based on the mean of `r samples` values drawn from an exponential distribution:
+##Sampled mean
+Following code will create a distribution of `r simulations` based on the mean of `r samples` values drawn from an exponential distribution:
 ```{r}
 mns = NULL
 for (i in 1 : simulations) mns = c(mns, mean(rexp(n=samples,lambda)))
 ```
 
-The mean of the `r simulations` of `r samples' samples is:
+The mean of the `r simulations` of `r samples` samples is:
 ```{r}
 mean(mns)
 ```
 
-Following figure shows the distribution of `r simulations*samples` samples drawn from an exponential distribution with lambda `r lambda`
+Following figure shows the distribution of `r prettyNum(simulations*samples,big.mark=',')` samples drawn from an exponential distribution with lambda `r lambda`
 ```{r}
 rexp_sim<-rexp(simulations*samples,lambda)
-n_breaks<-20
+
 hist(rexp_sim,
      breaks=n_breaks,
-     main=paste("Histogram of ",simulations*samples," samples from exponential distribution with lambda",lambda))
+     main=paste("Histogram of ",simulations*samples," samples from exponential distribution with lambda",lambda),
+     xlab="Exponential random variable")
 
 abline(v=1/lambda,lty="dashed",col="red")
 text(x=1/lambda,
-     y=sum(abs(rexp_sim-1/lambda)<(1/lambda)/n_breaks),
+     y=1000,
      labels=paste("Theoretical mean: ",1/lambda),
      pos=4)
 ```
 
 The following figure shows the distribution of the mean of `r simulations` distributions of `r samples` drawn from an exponential distribution with lambda `r lambda`
 ```{r}
-sum(abs(mns-mean(mns))<(max(mns)-min(mns))/n_breaks)
-(mean(mns))/n_breaks
-```
 hist(mns,
       breaks=n_breaks,
-     main=paste("Histogram of means of ",simulations," distributions of ",samples, "samples from exponential distribution with lambda",lambda))
+     main=paste("Histogram of means of ",simulations," distributions \nof ",samples, "samples from exponential distribution with lambda",lambda),
+     xlab="Mean of the sampled distribution")
 
 abline(v=mean(mns),lty="dashed",col="red")
 text(x=mean(mns),
-     y=sum(abs(mns-mean(mns))<(mean(mns))/n_breaks),
-     labels=paste("Observed population mean: ",mean(mns)),
+     y=40,
+     labels=paste("Observed population mean: ",prettyNum(mean(mns),digits=4)),
      pos=4)
 ```
 
+##Mean comparion conclusion
+The mean of the mean of the sampled distribution `r prettyNum(mean(mns),digits=4)` is close to the theoretical mean 1/lambda: `r prettyNum(1/lambda,digits=4)`
 
-#Distribution of the variance
-```{r}
-hist(rexp(simulations,lambda))
-```
+#Theoretical vs sampled variance
 
-```{r}
-var = NULL
-for (i in 1 : simulations) var = c(var, var(rexp(n=samples,lambda)))
-hist(var)
-```
-
-Theoretical variance deviation:
+##Theoretical variance:
 ```{r}
 1/lambda^2
 ```
 
-Variance of `simulations` samples:
+Variance of `r prettyNum(simulations,big.mark=',')` samples:
 ```{r}
 var(rexp(simulations,lambda))
 ```
 
-Estimation of population variance based on samples variance:
+##Variance of sampled population
+Draw a `r simulations` distributions of `r samples` drawn from an exponential distribution with lambda `r lambda` and take the variance of each of the distributions. Calculate the mean of the variances.
+```{r}
+var = NULL
+for (i in 1 : simulations) var = c(var, var(rexp(n=samples,lambda)))
+mean(var)
+```
+
+Estimation of population variance based on the mean of the variances of the samples:
 ```{r}
 pvar=(mean(var))*samples/(samples-1)
 pvar
 ```
 
+Following figure shows the distribution of the variances of the sampled distribution:
+```{r}
+hist(var,
+     breaks=n_breaks,
+       main=paste("Histogram of variances of ",simulations," distributions \nof ",samples, "samples from exponential distribution with lambda",lambda),
+     xlab="Variance")
 
-Quantiles of distribution of means
+abline(v=mean(var),lty="dashed",col="red")
+text(x=mean(var),
+     y=40,
+     labels=paste("Observed mean of the variances: ",prettyNum(mean(var),digits=4)),
+     pos=4)
+```
+
+##Variance comparion conclusion
+The estimated variance based on the mean of the variances of the sampled distribution `r prettyNum(pvar,digits=4)` is close to the theoretical mean 1/lambda^2: prettyNum(1/lambda^2,digits=4)
+
+#Comparison to normal distribution
+For this comparison, we will calculate the probability of having the 2.5% to 95% percentiles of the means of the sampled distribution inside the 2.5% to 97.5% percentiles of a draw from a normal distribution.
+
+First let's get the quantiles of our distribution of the means
 ```{r}
 quantiles<-c(0.025,.5,.975)
 quantile(mns,quantiles)
 ```
 
-Quantiles of normal distribution
+Then get the quantiles of normal a normal distribution with mean equal to observed mean and variance equal to observed variance
 ```{r}
-qnorm(quantiles,mean=mean(mns),sd=sqrt(pvar/samples))
+qnorm(quantiles,mean=mean(mns),sd=sqrt(pvar))
 ```
 
 Probability of finding the sampled 2.5%-97.5% interval inside normal distribution:
 ```{r}
-pnorm(q=quantile(mns,quantiles[length(quantiles)]),mean=mean(mns),sd=sqrt(pvar/samples))-pnorm(q=quantile(mns,quantiles[1]),mean=mean(mns),sd=sqrt(pvar/samples))
+prob<-pnorm(q=quantile(mns,quantiles[length(quantiles)]),mean=mean(mns),sd=sqrt(pvar/samples))-pnorm(q=quantile(mns,quantiles[1]),mean=mean(mns),sd=sqrt(pvar/samples))
+prob
 ```
 
+The probability of having drawn the same means from a normal random variable is `r sprintf("%.0f%%",prob*100)`
+
+Following histogram compares the means drawn from the exponential random variable vs the means drawn from a normal distribution
+```{r}
+mns_norm = NULL
+for (i in 1 : simulations) mns_norm = c(mns_norm, mean(rnorm(n=samples,mean=mean(mns),sd=sqrt(pvar))))
+mean(var)
+hist(mns, col=rgb(0,0,1,1/4),breaks=n_breaks,
+     main="Histogram of sampled exponential vs sampled normal",
+     xlab="Mean")  # first histogram
+hist(mns_norm, col=rgb(1,0,0,1/4), add=T,breaks=n_breaks)  # second
+legend("topright", c("Exp", "Normal"), col=c(rgb(0,0,1,1/4), rgb(1,0,0,1/4)), lwd=10)
+```
+
+##Comparion to normal distribution conclusion
+Both the probability of having the 2.5% to 97.5% percentiles inside the equivalent percentiles of a normal distribuion and the histogram show that the distribution of the means of the samples is normal like.
+
+#Conclusion
+This illustrated the Central Limit Theorem. Eventhough the original random variable was exponential, drawing the means from a significant number of samples "normalizes" the distribution.
+This is of course only applicable as the number of samples in each distribution and the number of distribuions taken is sufficiently high.

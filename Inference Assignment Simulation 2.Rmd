@@ -1,0 +1,107 @@
+---
+title: "ToothGrowth data analysis"
+author: "Jose Gonzalez"
+date: "10 novembre 2016"
+output: html_document
+---
+#Introduction
+In this repport, we analyze the toothgrowth per supplement and dosis. Our objective is to identify which supplement is most efficient, at different dosis, for toothGrowth
+
+```{r setup, include=FALSE}
+library(datasets)
+library(xtable)
+```
+
+#Exploratory analysis
+
+We will start with some explanatory analysis to get a better view on the data and the impact of each variable
+
+##Per supplement or per dose
+```{r}
+par(mfrow=c(1,2))
+boxplot(len~supp,data =ToothGrowth,
+        xlab="Supplement",
+        ylab="Length increase")
+boxplot(len~dose,data =ToothGrowth,
+        xlab="Dose",
+        ylab="Length increase")
+
+```
+
+The above plot shows that it appearq there is a slighter higher growth with VC supplement.
+It also clearly plots that higher doses yield higher growths.
+
+##Per dose and supplement
+```{r}
+boxplot(len~supp+dose,data =ToothGrowth,
+        xlab="Supplement and Dose",
+        ylab="Length increase")
+```
+
+Appears that VC is more efficient than OJ at lower dosis, while at higher dosis no clear difference can be seen.
+
+#Data Summary
+Mean growth per supplement and dose
+```{r}
+aggregate(ToothGrowth$len~ToothGrowth$supp+ToothGrowth$dose,FUN=mean)
+```
+
+The above table also indiquates that VC might be more efficient than OJ at lower dosis, while at maximum dosis there is no significant difference in the mean.
+
+#Hypothesis test
+To confirm the observations in the exploratory data analysis and data summary sections, that is: OJ supplement appears to be more efficient at Toothgrowth than VC component, at lower dosis, we will compare the toothgrowth of the two supplements at the different dosis with a t-test
+
+##T-test of difference between supplements per dosis
+Comparison of growth difference from VC to OJ supplement per dose using a T-test:
+```{r}
+t_result=NULL
+tmp_result=NULL
+t_result=data.frame(dose=NULL,
+                    mean=NULL,
+                    low_interval=NULL,
+                    high_interval=NULL,
+                    p.value=NULL)
+for(i in unique(ToothGrowth$dose)){
+  tmp_result<-t.test(
+    ToothGrowth[ToothGrowth$supp=="OJ" & 
+                  ToothGrowth$dose==i,]$len-
+      ToothGrowth[ToothGrowth$supp=="VC" 
+                  & ToothGrowth$dose==i,]$len)
+  
+  t_result=rbind(t_result,
+                 data.frame(
+                   dose=i,
+                   mean=tmp_result$estimate,
+                    low_interval=tmp_result$conf.int[1],
+                    high_interval=tmp_result$conf.int[2],
+                    p.value=tmp_result$p.value
+                    ))
+}
+row.names(t_result)=rep(NULL,3)
+```
+
+Summary of T-test per dosis:
+```{r results="asis"}
+xt_t_result<-xtable(t_result)
+print(xt_t_result,type="html",row.names=FALSE)
+```
+
+The T-test is conclusive, for 0.5 and 1 dosis, OJ yields a higher growth. No conclusion can be taken for dosis 2.0
+
+##Quantiles at maximum dosis per component
+Quantiles at maximum dosis for OJ supplement:
+```{r}
+quantile(ToothGrowth[ToothGrowth$supp=="OJ" & 
+                  ToothGrowth$dose==2,]$len)
+```
+
+Quantiles at maximum dosis for VC supplement:
+```{r}
+quantile(ToothGrowth[ToothGrowth$supp=="VC" & 
+                  ToothGrowth$dose==2,]$len)
+```
+
+The quantiles show that despite the fact that the means of growth at maximum doses are similar, the OJ growth is more predictable as the distribution is less spread than the VC one.
+
+#Conclusion
+We see that the OJ supplement is, at doses 0.5 and 1.0, more efficient at tooth growth than supplement VC. At a dose of 2.0, no conclusive difference between the two components was found, but the OJ supplement provides a more concentrated growth than the VC.
